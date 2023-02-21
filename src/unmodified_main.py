@@ -156,10 +156,28 @@ def main():
                     if legal_wall_position(random_loc_bis):
                         return(random_loc,random_loc_bis)
 
-    game_end = 0
-    num_wall_used = [0,0]
-    posPlayers = initStates
-    g =np.ones((nbLignes,nbCols),dtype=bool)  # une matrice remplie par defaut a True
+    #-------------------------------
+    # Le joueur 0 place tous les murs au hasard
+    #-------------------------------
+                    
+                     
+    for i in range(0,len(walls[0]),2): 
+        ((x1,y1),(x2,y2)) = draw_random_wall_location()
+        walls[0][i].set_rowcol(x1,y1)
+        walls[0][i+1].set_rowcol(x2,y2)
+        game.mainiteration()
+
+   
+    
+    #-------------------------------
+    # calcul A* pour le joueur 1
+    #-------------------------------
+    
+
+    
+    g =np.ones((nbLignes,nbCols),dtype=bool)  # une matrice remplie par defaut a True  
+    for w in wallStates(allWalls):            # on met False quand murs
+        g[w]=False
     for i in range(nbLignes):                 # on exclut aussi les bordures du plateau
         g[0][i]=False
         g[1][i]=False
@@ -169,37 +187,35 @@ def main():
         g[i][1]=False
         g[i][nbLignes-1]=False
         g[i][nbLignes-2]=False
+    p = ProblemeGrid2D(initStates[1],objectifs[1],g,'manhattan')
+    path = probleme.astar(p,verbose=False)
+    print ("Chemin trouvé:", path)
+        
     
-    while iterations > 0 and game_end == 0:
-        for player_num in range(2): # Tour du joueurs 0/1
+    #-------------------------------
+    # Boucle principale de déplacements 
+    #-------------------------------
+    
             
-            # décision de l'action
-            action = 0 # 0 -> se déplacer ; 1 -> placer un mur
-            if (num_wall_used[player_num] < nbWalls/2):
-                action = random.randint(0,1)
-            if action == 1: # placer un mur
-                ((x1,y1),(x2,y2)) = draw_random_wall_location()
-                print(num_wall_used)
-                walls[player_num][num_wall_used[player_num]*2].set_rowcol(x1,y1)
-                walls[player_num][num_wall_used[player_num]*2+1].set_rowcol(x2,y2)
-                g[walls[player_num][num_wall_used[player_num]*2].get_rowcol()]=False
-                g[walls[player_num][num_wall_used[player_num]*2+1].get_rowcol()]=False
-                num_wall_used[player_num] += 1
+    posPlayers = initStates
+
+    for i in range(iterations):
+        
+        # on fait bouger le joueur 1 jusqu'à son but
+        # en suivant le chemin trouve avec A* 
+        
+        row,col = path[i]
+        posPlayers[1]=(row,col)
+        players[1].set_rowcol(row,col)
+        print ("pos joueur 1:", row,col)
+        if (row,col) == objectifs[1]:
+            print("le joueur 1 a atteint son but!")
+            break
+        
+        # mise à jour du pleateau de jeu
+        game.mainiteration()
+
                 
-            if action == 0: # 0 -> se déplacer
-                # trouver une route
-                p = ProblemeGrid2D(initStates[player_num],objectifs[player_num],g,'manhattan')
-                path = probleme.astar(p,verbose=False)
-                # se déplacer
-                row,col = path[1]
-                posPlayers[player_num]=(row,col)
-                players[player_num].set_rowcol(row,col)
-                print ("pos joueur 1:", row,col)
-                if (row,col) == objectifs[player_num]:
-                    print("le joueur "+str(player_num)+" a atteint son but!")
-                    game_end = 1
-            game.mainiteration()
-        iterations -= 1
         
             
     
@@ -220,4 +236,3 @@ if __name__ == '__main__':
     
 
 
-    
