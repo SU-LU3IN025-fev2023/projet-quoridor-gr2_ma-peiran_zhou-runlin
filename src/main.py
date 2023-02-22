@@ -46,12 +46,14 @@ def init(_boardname=None):
     player = game.player
 
 def exist_route(g,initStates,objectifs,x1,y1,x2,y2):
-    g[y1][x1]=False
-    g[y2][x2]=False
+    g[x1][y1]=False
+    g[x2][y2]=False
     p0 = ProblemeGrid2D(initStates[0],objectifs[0],g,'manhattan')
     path0 = probleme.astar(p0,verbose=False)
     p1 = ProblemeGrid2D(initStates[1],objectifs[1],g,'manhattan')
     path1 = probleme.astar(p1,verbose=False)
+    print("p0",path0)
+    print("p1",path1)
     return path0[-1] == objectifs[0] and path1[-1] == objectifs[1]
     
 def main():
@@ -210,6 +212,9 @@ def main():
                 path = probleme.astar(p,verbose=False)
                 # se déplacer
                 print(path)
+                if path[-1] != objectifs[player_num]:
+                    while True:
+                        pass
                 row,col = path[1]
                 posPlayers[player_num]=(row,col)
                 players[player_num].set_rowcol(row,col)
@@ -223,7 +228,7 @@ def main():
         iterations -= 1
         
             
-    
+
     pygame.quit()
     
     
