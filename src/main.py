@@ -6,6 +6,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import random 
 import numpy as np
 import sys
+import copy
 from itertools import chain
 
 
@@ -43,6 +44,15 @@ def init(_boardname=None):
     game.fps = 5  # frames per second
     game.mainiteration()
     player = game.player
+
+def exist_route(g,initStates,objectifs,x1,y1,x2,y2):
+    g[y1][x1]=False
+    g[y2][x2]=False
+    p0 = ProblemeGrid2D(initStates[0],objectifs[0],g,'manhattan')
+    path0 = probleme.astar(p0,verbose=False)
+    p1 = ProblemeGrid2D(initStates[1],objectifs[1],g,'manhattan')
+    path1 = probleme.astar(p1,verbose=False)
+    return path0[-1] == objectifs[0] and path1[-1] == objectifs[1]
     
 def main():
 
@@ -170,20 +180,28 @@ def main():
         g[i][nbLignes-1]=False
         g[i][nbLignes-2]=False
     
-    while iterations > 0 and game_end == 0:
+    while iterations > 0:
         for player_num in range(2): # Tour du joueurs 0/1
             
             # décision de l'action
             action = 0 # 0 -> se déplacer ; 1 -> placer un mur
-            if (num_wall_used[player_num] < nbWalls/2):
+            if (num_wall_used[player_num] < nbWalls//2):
                 action = random.randint(0,1)
+            if action == 1: # générer un mur
+                attemptnum = 0
+                while attemptnum<200:
+                    ((x1,y1),(x2,y2)) = draw_random_wall_location()
+                    if exist_route(copy.deepcopy(g),initStates,objectifs,x1,y1,x2,y2):
+                        break
+                    attemptnum+=1
+                if attemptnum>=200:
+                    action = 0
+                    num_wall_used[player_num] = nbWalls//2
             if action == 1: # placer un mur
-                ((x1,y1),(x2,y2)) = draw_random_wall_location()
-                print(num_wall_used)
-                walls[player_num][num_wall_used[player_num]*2].set_rowcol(x1,y1)
-                walls[player_num][num_wall_used[player_num]*2+1].set_rowcol(x2,y2)
-                g[walls[player_num][num_wall_used[player_num]*2].get_rowcol()]=False
-                g[walls[player_num][num_wall_used[player_num]*2+1].get_rowcol()]=False
+                walls[player_num][num_wall_used[player_num]].set_rowcol(x1,y1)
+                walls[player_num][num_wall_used[player_num]+nbWalls//2].set_rowcol(x2,y2)
+                g[walls[player_num][num_wall_used[player_num]].get_rowcol()]=False
+                g[walls[player_num][num_wall_used[player_num]+nbWalls//2].get_rowcol()]=False
                 num_wall_used[player_num] += 1
                 
             if action == 0: # 0 -> se déplacer
@@ -191,14 +209,17 @@ def main():
                 p = ProblemeGrid2D(initStates[player_num],objectifs[player_num],g,'manhattan')
                 path = probleme.astar(p,verbose=False)
                 # se déplacer
+                print(path)
                 row,col = path[1]
                 posPlayers[player_num]=(row,col)
                 players[player_num].set_rowcol(row,col)
-                print ("pos joueur 1:", row,col)
+                print ("pos joueur ",player_num,":", row,col)
                 if (row,col) == objectifs[player_num]:
                     print("le joueur "+str(player_num)+" a atteint son but!")
                     game_end = 1
             game.mainiteration()
+        if game_end==1:
+            break
         iterations -= 1
         
             
