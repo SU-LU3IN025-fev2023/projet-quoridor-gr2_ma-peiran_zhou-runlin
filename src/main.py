@@ -151,9 +151,11 @@ def main():
                 pos_list = [nextInitStates[playernum]]
             
         if num_wall_used[playernum] < nbWalls//2:
+            analysed_pos = []
             for wall_attempt in range(200):
                 ((x1,y1),(x2,y2)) = draw_random_wall_location()
-                if Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
+                if (x1,y1,x2,y2) not in analysed_pos and Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
+                    analysed_pos.append((x1,y1,x2,y2))
                     print ("étendu noeud - ",playernum," placer mur ", (x1,y1),(x2,y2)," ; iter= ",iter)
                     nextG = copy.deepcopy(g)
                     nextG[x1][y1]=False
@@ -190,9 +192,11 @@ def main():
                 pos_list = [nextInitStates[playernum]]
             
         if num_wall_used[1-playernum] < nbWalls//2:
+            analysed_pos = []
             for wall_attempt in range(200):
                 ((x1,y1),(x2,y2)) = draw_random_wall_location()
-                if Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
+                if (x1,y1,x2,y2) not in analysed_pos and Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
+                    analysed_pos.append((x1,y1,x2,y2))
                     print ("étendu noeud - ",playernum," placer mur ", (x1,y1),(x2,y2)," ; iter= ",iter)
                     nextG = copy.deepcopy(g)
                     nextG[x1][y1]=False
