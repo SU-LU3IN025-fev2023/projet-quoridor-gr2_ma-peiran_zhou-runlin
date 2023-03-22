@@ -22,10 +22,10 @@ import pySpriteWorld.glo
 from search.grid2D import ProblemeGrid2D
 from search import probleme
 import Utls
-STRATEGY_MODE = (1,1)
+STRATEGY_MODE = (0,2)
 # 0 -> random strategy
-
-
+# 1 -> astar
+# 2 -> minimax
 
 
 
@@ -92,20 +92,121 @@ def main():
     nbWalls = len(walls[0])
     assert len(walls[0])==len(walls[1]) # les 2 joueurs doivent avoir le mm nombre de murs
     
+    def legal_wall_position(pos):
+        row,col = pos
+        # une position legale est dans la carte et pas sur un mur deja pose ni sur un joueur
+        # attention: pas de test ici qu'il reste un chemin vers l'objectif
+        return ((pos not in wallStates(allWalls)) and (pos not in playerStates(players)) and row>lMin and row<lMax-1 and col>=cMin and col<cMax)
+
+    def draw_random_wall_location():
+    # tire au hasard un couple de position permettant de placer un mur
+        while True:
+            random_loc = (random.randint(lMin,lMax),random.randint(cMin,cMax))
+            if legal_wall_position(random_loc):  
+                inc_pos =[(0,1),(0,-1),(1,0),(-1,0)] 
+                random.shuffle(inc_pos)
+                for w in inc_pos:
+                    random_loc_bis = (random_loc[0] + w[0],random_loc[1]+w[1])
+                    if legal_wall_position(random_loc_bis):
+                        return(random_loc,random_loc_bis)
     #-------------------------------
     # Fonctions permettant de récupérer les listes des coordonnées
     # d'un ensemble d'objets murs ou joueurs
     #-------------------------------
-    
+
     def wallStates(walls): 
         # donne la liste des coordonnees dez murs
         return [w.get_rowcol() for w in walls]
-    
+
     def playerStates(players):
-        # donne la liste des coordonnees dez joueurs
-        return [p.get_rowcol() for p in players]
+       # donne la liste des coordonnees dez joueurs
+       return [p.get_rowcol() for p in players]
     
-   
+    def minimax(g,initStates,allObjectifs,playernum,num_wall_used,nbWalls,max_iter=2):
+        """
+	    Maximizer enemy_steps - self_steps
+	    """
+        return maxValue(g,initStates,allObjectifs,playernum,num_wall_used,nbWalls,max_iter)
+
+    def maxValue(g,initStates,allObjectifs,playernum,num_wall_used,nbWalls,iter):
+        option = -1 # -1 noeud feuille ; 0 : se déplacer ; 1 : placer mur
+        pos_list = [] # [] noeud feuille ; [(x,y)] : coordonnées de la prochaine étape (se déplacer) ; [(x1,y1),(x2,y2)] : coordonnées du mur placé (placer mur)
+        tmp = Utls.step_rest(g,initStates,allObjectifs)
+        if iter==0: # si limite de récurrence atteinte
+            return tmp[1-playernum]-tmp[playernum], option, pos_list
+        if tmp[0]==1 or tmp[1]==1: # si feuille (quelqu'un gagne) on renvoie la valeur
+            return tmp[1-playernum]-tmp[playernum], option, pos_list
+        v = -255
+
+        for step in [(-1,0),(1,0),(0,1),(0,-1)]:
+            if playernum==0:
+                nextInitStates = [(initStates[0][0]+step[0],initStates[0][1]+step[1]),initStates[1]]
+            else:
+                nextInitStates = [initStates[0],(initStates[1][0]+step[0],initStates[1][1]+step[1])]
+            print ("étendu noeud - ",playernum," se déplacer ", nextInitStates[playernum]," ; iter= ",iter)
+            minval,_,_ = minValue(copy.deepcopy(g),nextInitStates,allObjectifs,playernum,num_wall_used,nbWalls,iter-1)
+            if v < minval:
+                v = minval
+                option = 0
+                pos_list = [nextInitStates[playernum]]
+            
+        if num_wall_used[playernum] < nbWalls//2:
+            for wall_attempt in range(200):
+                ((x1,y1),(x2,y2)) = draw_random_wall_location()
+                if Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
+                    print ("étendu noeud - ",playernum," placer mur ", (x1,y1),(x2,y2)," ; iter= ",iter)
+                    nextG = copy.deepcopy(g)
+                    nextG[x1][y1]=False
+                    nextG[x2][y2]=False
+                    new_num_wall_used = num_wall_used[:]
+                    new_num_wall_used[playernum] += 1
+                    minval,_,_ = minValue(nextG,initStates,allObjectifs,playernum,new_num_wall_used,nbWalls,iter-1)
+                    if v < minval:
+                        v = minval
+                        option = 1
+                        pos_list = [(x1,y1),(x2,y2)]
+        return v,option,pos_list
+
+    def minValue(g,initStates,allObjectifs,playernum,num_wall_used,nbWalls,iter):
+        option = -1 # -1 noeud feuille ; 0 : se déplacer ; 1 : placer mur
+        pos_list = [] # [] noeud feuille ; [(x,y)] : coordonnées de la prochaine étape (se déplacer) ; [(x1,y1),(x2,y2)] : coordonnées du mur placé (placer mur)
+        tmp = Utls.step_rest(g,initStates,allObjectifs)
+        if iter==0: # si limite de récurrence atteinte
+            return tmp[1-playernum]-tmp[playernum], option, pos_list
+        if tmp[0]==1 or tmp[1]==1: # si feuille (quelqu'un gagne) on renvoie la valeur
+            return tmp[1-playernum]-tmp[playernum], option, pos_list
+        v = 255
+
+        for step in [(-1,0),(1,0),(0,1),(0,-1)]:
+            if playernum==1:
+                nextInitStates = [(initStates[0][0]+step[0],initStates[0][1]+step[1]),initStates[1]]
+            else:
+                nextInitStates = [initStates[0],(initStates[1][0]+step[0],initStates[1][1]+step[1])]
+            print ("étendu noeud - ",1-playernum," se déplacer ", nextInitStates[1-playernum]," ; iter= ",iter)
+            maxval,_,_ = maxValue(copy.deepcopy(g),nextInitStates,allObjectifs,playernum,num_wall_used,nbWalls,iter-1)
+            if v > maxval:
+                v = maxval
+                option = 0
+                pos_list = [nextInitStates[playernum]]
+            
+        if num_wall_used[1-playernum] < nbWalls//2:
+            for wall_attempt in range(200):
+                ((x1,y1),(x2,y2)) = draw_random_wall_location()
+                if Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
+                    print ("étendu noeud - ",playernum," placer mur ", (x1,y1),(x2,y2)," ; iter= ",iter)
+                    nextG = copy.deepcopy(g)
+                    nextG[x1][y1]=False
+                    nextG[x2][y2]=False
+                    new_num_wall_used = num_wall_used[:]
+                    new_num_wall_used[1-playernum] += 1
+                    maxval,_,_ = maxValue(nextG,initStates,allObjectifs,playernum,new_num_wall_used,nbWalls,iter-1)
+                    if v > maxval:
+                        v = maxval
+                        option = 1
+                        pos_list = [(x1,y1),(x2,y2)]
+        return v,option,pos_list
+
+
     #-------------------------------
     # Rapport de ce qui est trouve sut la carte
     #-------------------------------
@@ -133,27 +234,7 @@ def main():
     print("Tous les objectifs joueur 0", allObjectifs[0])
     print("Tous les objectifs joueur 1", allObjectifs[1])
 
-    #-------------------------------
-    # Fonctions definissant les positions legales et placement de mur aléatoire
-    #-------------------------------
     
-    def legal_wall_position(pos):
-        row,col = pos
-        # une position legale est dans la carte et pas sur un mur deja pose ni sur un joueur
-        # attention: pas de test ici qu'il reste un chemin vers l'objectif
-        return ((pos not in wallStates(allWalls)) and (pos not in playerStates(players)) and row>lMin and row<lMax-1 and col>=cMin and col<cMax)
-    
-    def draw_random_wall_location():
-        # tire au hasard un couple de position permettant de placer un mur
-        while True:
-            random_loc = (random.randint(lMin,lMax),random.randint(cMin,cMax))
-            if legal_wall_position(random_loc):  
-                inc_pos =[(0,1),(0,-1),(1,0),(-1,0)] 
-                random.shuffle(inc_pos)
-                for w in inc_pos:
-                    random_loc_bis = (random_loc[0] + w[0],random_loc[1]+w[1])
-                    if legal_wall_position(random_loc_bis):
-                        return(random_loc,random_loc_bis)
 
     game_end = 0
     num_wall_used = [0,0]
@@ -205,7 +286,6 @@ def main():
                     p = ProblemeGrid2D(initStates[player_num],objectifs[player_num],g,'manhattan')
                     path = probleme.astar(p,verbose=False)
                     # se déplacer
-                    print(path)
                     if path[-1] != objectifs[player_num]:
                         while True:
                             pass
@@ -234,7 +314,7 @@ def main():
                 for attemptnum in range(200):
                     ((x1,y1),(x2,y2)) = draw_random_wall_location()
                     if Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
-                        tmp = Utls.step_rest(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2)
+                        tmp = Utls.step_rest_wall(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2)
                         self_step_rest = tmp[player_num]
                         enemy_step_rest = tmp[1-player_num]
                         if enemy_step_rest - self_step_rest - (enemy_min_step - self_min_step) > max_diff:
@@ -262,7 +342,6 @@ def main():
                             best_step = len(path)
                             best_pos = path[1]
                     # se déplacer
-                    print(path)
                     if best_pos == None:
                         while True:
                             pass
@@ -270,10 +349,32 @@ def main():
                     posPlayers[player_num]=(row,col)
                     players[player_num].set_rowcol(row,col)
                     print ("pos joueur ",player_num,":", row,col)
+                    print(initStates)
                     if (row,col) in allObjectifs[player_num]:
                         print("le joueur "+str(player_num)+" a atteint son but!")
                         game_end = 1
-                        
+        # strategy minimax
+            if STRATEGY_MODE[player_num] == 2:
+                # décision de l'action
+                _,action,pos_list = minimax(copy.deepcopy(g),initStates,allObjectifs,player_num,num_wall_used,nbWalls) # action 0 -> se déplacer ; 1 -> placer un mur
+                x1,y1 = pos_list[0]
+                x2,y2 = pos_list[1]
+                if action == 1: # placer un mur
+                    walls[player_num][num_wall_used[player_num]].set_rowcol(x1,y1)
+                    walls[player_num][num_wall_used[player_num]+nbWalls//2].set_rowcol(x2,y2)
+                    g[walls[player_num][num_wall_used[player_num]].get_rowcol()]=False
+                    g[walls[player_num][num_wall_used[player_num]+nbWalls//2].get_rowcol()]=False
+                    num_wall_used[player_num] += 1
+                
+                if action == 0: # 0 -> se déplacer
+                    # se déplacer
+                    row,col = pos_list[0]
+                    posPlayers[player_num]=(row,col)
+                    players[player_num].set_rowcol(row,col)
+                    print ("pos joueur ",player_num,":", row,col)
+                    if (row,col) in allObjectifs[player_num]:
+                        print("le joueur "+str(player_num)+" a atteint son but!")
+                        game_end = 1
             game.mainiteration()
         if game_end==1:
             break
