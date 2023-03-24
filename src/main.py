@@ -22,7 +22,7 @@ import pySpriteWorld.glo
 from search.grid2D import ProblemeGrid2D
 from search import probleme
 import Utls
-STRATEGY_MODE = (0,2)
+STRATEGY_MODE = (1,2)
 # 0 -> random strategy
 # 1 -> astar
 # 2 -> minimax
@@ -122,13 +122,13 @@ def main():
        # donne la liste des coordonnees dez joueurs
        return [p.get_rowcol() for p in players]
     
-    def minimax(g,initStates,allObjectifs,playernum,num_wall_used,nbWalls,max_iter=2):
+    def minimax(g,initStates,allObjectifs,playernum,num_wall_used,nbWalls,max_iter=6,branch_border=(3,-3)):
         """
 	    Maximizer enemy_steps - self_steps
 	    """
-        return maxValue(g,initStates,allObjectifs,playernum,num_wall_used,nbWalls,max_iter)
+        return maxValue(g,initStates,allObjectifs,playernum,num_wall_used,nbWalls,max_iter,branch_border)
 
-    def maxValue(g,initStates,allObjectifs,playernum,num_wall_used,nbWalls,iter):
+    def maxValue(g,initStates,allObjectifs,playernum,num_wall_used,nbWalls,iter,branch_border):
         option = -1 # -1 noeud feuille ; 0 : se déplacer ; 1 : placer mur
         pos_list = [] # [] noeud feuille ; [(x,y)] : coordonnées de la prochaine étape (se déplacer) ; [(x1,y1),(x2,y2)] : coordonnées du mur placé (placer mur)
         tmp = Utls.step_rest(g,initStates,allObjectifs)
@@ -143,12 +143,14 @@ def main():
                 nextInitStates = [(initStates[0][0]+step[0],initStates[0][1]+step[1]),initStates[1]]
             else:
                 nextInitStates = [initStates[0],(initStates[1][0]+step[0],initStates[1][1]+step[1])]
-            print ("étendu noeud - ",playernum," se déplacer ", nextInitStates[playernum]," ; iter= ",iter)
-            minval,_,_ = minValue(copy.deepcopy(g),nextInitStates,allObjectifs,playernum,num_wall_used,nbWalls,iter-1)
+            #print ("étendu noeud - ",playernum," se déplacer ", nextInitStates[playernum]," ; iter= ",iter)
+            minval,_,_ = minValue(copy.deepcopy(g),nextInitStates,allObjectifs,playernum,num_wall_used,nbWalls,iter-1,branch_border)
             if v < minval:
                 v = minval
                 option = 0
                 pos_list = [nextInitStates[playernum]]
+                if v >= branch_border[0]:
+                    return v,option,pos_list
             
         if num_wall_used[playernum] < nbWalls//2:
             analysed_pos = []
@@ -156,20 +158,22 @@ def main():
                 ((x1,y1),(x2,y2)) = draw_random_wall_location()
                 if (x1,y1,x2,y2) not in analysed_pos and Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
                     analysed_pos.append((x1,y1,x2,y2))
-                    print ("étendu noeud - ",playernum," placer mur ", (x1,y1),(x2,y2)," ; iter= ",iter)
+                    #print ("étendu noeud - ",playernum," placer mur ", (x1,y1),(x2,y2)," ; iter= ",iter)
                     nextG = copy.deepcopy(g)
                     nextG[x1][y1]=False
                     nextG[x2][y2]=False
                     new_num_wall_used = num_wall_used[:]
                     new_num_wall_used[playernum] += 1
-                    minval,_,_ = minValue(nextG,initStates,allObjectifs,playernum,new_num_wall_used,nbWalls,iter-1)
+                    minval,_,_ = minValue(nextG,initStates,allObjectifs,playernum,new_num_wall_used,nbWalls,iter-1,branch_border)
                     if v < minval:
                         v = minval
                         option = 1
                         pos_list = [(x1,y1),(x2,y2)]
+                        if v >= branch_border[0]:
+                            return v,option,pos_list
         return v,option,pos_list
 
-    def minValue(g,initStates,allObjectifs,playernum,num_wall_used,nbWalls,iter):
+    def minValue(g,initStates,allObjectifs,playernum,num_wall_used,nbWalls,iter,branch_border):
         option = -1 # -1 noeud feuille ; 0 : se déplacer ; 1 : placer mur
         pos_list = [] # [] noeud feuille ; [(x,y)] : coordonnées de la prochaine étape (se déplacer) ; [(x1,y1),(x2,y2)] : coordonnées du mur placé (placer mur)
         tmp = Utls.step_rest(g,initStates,allObjectifs)
@@ -184,12 +188,14 @@ def main():
                 nextInitStates = [(initStates[0][0]+step[0],initStates[0][1]+step[1]),initStates[1]]
             else:
                 nextInitStates = [initStates[0],(initStates[1][0]+step[0],initStates[1][1]+step[1])]
-            print ("étendu noeud - ",1-playernum," se déplacer ", nextInitStates[1-playernum]," ; iter= ",iter)
-            maxval,_,_ = maxValue(copy.deepcopy(g),nextInitStates,allObjectifs,playernum,num_wall_used,nbWalls,iter-1)
+            #print ("étendu noeud - ",1-playernum," se déplacer ", nextInitStates[1-playernum]," ; iter= ",iter)
+            maxval,_,_ = maxValue(copy.deepcopy(g),nextInitStates,allObjectifs,playernum,num_wall_used,nbWalls,iter-1,branch_border)
             if v > maxval:
                 v = maxval
                 option = 0
                 pos_list = [nextInitStates[playernum]]
+                if v <= branch_border[1]:
+                    return v,option,pos_list
             
         if num_wall_used[1-playernum] < nbWalls//2:
             analysed_pos = []
@@ -197,17 +203,19 @@ def main():
                 ((x1,y1),(x2,y2)) = draw_random_wall_location()
                 if (x1,y1,x2,y2) not in analysed_pos and Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
                     analysed_pos.append((x1,y1,x2,y2))
-                    print ("étendu noeud - ",playernum," placer mur ", (x1,y1),(x2,y2)," ; iter= ",iter)
+                    #print ("étendu noeud - ",playernum," placer mur ", (x1,y1),(x2,y2)," ; iter= ",iter)
                     nextG = copy.deepcopy(g)
                     nextG[x1][y1]=False
                     nextG[x2][y2]=False
                     new_num_wall_used = num_wall_used[:]
                     new_num_wall_used[1-playernum] += 1
-                    maxval,_,_ = maxValue(nextG,initStates,allObjectifs,playernum,new_num_wall_used,nbWalls,iter-1)
+                    maxval,_,_ = maxValue(nextG,initStates,allObjectifs,playernum,new_num_wall_used,nbWalls,iter-1,branch_border)
                     if v > maxval:
                         v = maxval
                         option = 1
                         pos_list = [(x1,y1),(x2,y2)]
+                        if v <= branch_border[1]:
+                            return v,option,pos_list
         return v,option,pos_list
 
 
@@ -360,10 +368,11 @@ def main():
         # strategy minimax
             if STRATEGY_MODE[player_num] == 2:
                 # décision de l'action
-                _,action,pos_list = minimax(copy.deepcopy(g),initStates,allObjectifs,player_num,num_wall_used,nbWalls) # action 0 -> se déplacer ; 1 -> placer un mur
-                x1,y1 = pos_list[0]
-                x2,y2 = pos_list[1]
+                v,action,pos_list = minimax(copy.deepcopy(g),initStates,allObjectifs,player_num,num_wall_used,nbWalls) # action 0 -> se déplacer ; 1 -> placer un mur
+                print(v)
                 if action == 1: # placer un mur
+                    x1,y1 = pos_list[0]
+                    x2,y2 = pos_list[1]
                     walls[player_num][num_wall_used[player_num]].set_rowcol(x1,y1)
                     walls[player_num][num_wall_used[player_num]+nbWalls//2].set_rowcol(x2,y2)
                     g[walls[player_num][num_wall_used[player_num]].get_rowcol()]=False
