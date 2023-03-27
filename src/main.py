@@ -22,14 +22,17 @@ import pySpriteWorld.glo
 from search.grid2D import ProblemeGrid2D
 from search import probleme
 import Utls
-STRATEGY_MODE = (0,5)
+
+# ---------    -------------       ---         ----------
+
+STRATEGY_MODE = (1,4)
 # 0 -> random strategy
 # 1 -> astar
 # 2 -> minimax original
 # 3 -> minimax Alpha-beta
 # 4 -> minimax reduced
 
-
+# ----------  ------------ ------------ ----------------
 
 
 # ---- ---- ---- ---- ---- ----
@@ -551,13 +554,12 @@ def main():
                 if (row,col) in allObjectifs[player_num]:
                     print("le joueur "+str(player_num)+" a atteint son but!")
                     game_end = 1
+
         game.mainiteration()
         if game_end==1:
             break
         iterations -= 1
         
-            
-
     pygame.quit()
     
     
@@ -572,7 +574,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
-
-
-    

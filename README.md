@@ -1,4 +1,3 @@
-
 # projet-quoridor
 Projet IA et Jeux 2022-2023, L3 Sorbonne Université
 
