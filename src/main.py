@@ -22,7 +22,7 @@ import pySpriteWorld.glo
 from search.grid2D import ProblemeGrid2D
 from search import probleme
 import Utls
-STRATEGY_MODE = (0,5)
+STRATEGY_MODE = [1,5]
 # 0 -> random strategy
 # 1 -> astar
 # 2 -> minimax original
@@ -412,20 +412,25 @@ def main():
                     
                 # Branche : si placer un mur peut mener l'ennemi de deux pas, alors placer le mur, sinon se bouger.
                 x1b, y1b, x2b, y2b = -1, -1, -1, -1 #Emplacement optimal pour placer les murs
-                action = 1 # 0 -> se déplacer ; 1 -> placer un mur
-                max_diff = 1
-                for attemptnum in range(200):
-                    ((x1,y1),(x2,y2)) = draw_random_wall_location()
-                    if Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
-                        tmp = Utls.step_rest_wall(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2)
-                        self_step_rest = tmp[player_num]
-                        enemy_step_rest = tmp[1-player_num]
-                        if enemy_step_rest - self_step_rest - (enemy_min_step - self_min_step) > max_diff:
-                            max_diff = enemy_step_rest - self_step_rest - (enemy_min_step - self_min_step)
-                            x1b, y1b, x2b, y2b = x1, y1, x2, y2
-                if x1b == -1: # aucun emplacement approprié n'a été trouvé
-                    action = 0
-                    
+                action = 0 # 0 -> se déplacer ; 1 -> placer un mur
+                if num_wall_used[player_num]<nbWalls//2:
+                    max_enemy_min_step = enemy_min_step
+                    if self_min_step<=enemy_min_step:
+                        max_diff = 1
+                    else:
+                        max_diff = -255
+                    for attemptnum in range(200):
+                        ((x1,y1),(x2,y2)) = draw_random_wall_location()
+                        if Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
+                            tmp = Utls.step_rest_wall(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2)
+                            self_step_rest = tmp[player_num]
+                            enemy_step_rest = tmp[1-player_num]
+                            if enemy_step_rest - self_step_rest - (enemy_min_step - self_min_step) > max_diff or (enemy_step_rest - self_step_rest - (enemy_min_step - self_min_step) == max_diff and enemy_step_rest>max_enemy_min_step):
+                                max_diff = enemy_step_rest - self_step_rest - (enemy_min_step - self_min_step)
+                                max_enemy_min_step = enemy_step_rest
+                                x1b, y1b, x2b, y2b = x1, y1, x2, y2
+                    if x1b != -1: # pour éviter le cas ou aucun emplacement approprié n'a été trouvé
+                        action = 1
                 # placer un mur
                 if action == 1:
                     walls[player_num][num_wall_used[player_num]].set_rowcol(x1b,y1b)
@@ -483,75 +488,74 @@ def main():
                     if (row,col) in allObjectifs[player_num]:
                         print("le joueur "+str(player_num)+" a atteint son but!")
                         game_end = 1
-            game.mainiteration()
-        if game_end==1:
-            break
-        iterations -= 1
-        # strategy start trap
-        if STRATEGY_MODE[player_num] == 5:
-            # décision de l'action
-            # first turn?
-            action = 0
-            enm_x,enm_y = players[player_num].get_rowcol()
-            if prev_num_wall_used[0] == -1:
-                prev_num_wall_used = num_wall_used.copy()
-                x1,y1,x2,y2 = 5,enm_y+2*player_num-1,5,enm_y+4*player_num-2
-                if Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
-                    action = 1
-            elif prev_num_wall_used[1-player_num] == num_wall_used[1-player_num] and num_wall_used[player_num]<nbWalls//2:
-                analysed_pos = []
-                total_max_step = -1
-                best_pos = None
-                for wall_attempt in range(400):
-                    ((x1,y1),(x2,y2)) = draw_random_wall_location()
-                    if (x1,y1,x2,y2) not in analysed_pos and Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2) and ((x1<5 and x2<5 and enm_x<5)or(x1>5 and x2>5 and enm_x>5)):
-                        analysed_pos.append((x1,y1,x2,y2))
-                        enemy_max_step = -255
-                        new_g = copy.deepcopy(g)
-                        new_g[x1][y1] = False
-                        new_g[x2][y2] = False
-                        for enemy_objective in allObjectifs[1-player_num]:
-                            prob_temp = ProblemeGrid2D(initStates[1-player_num],enemy_objective,new_g,'manhattan')
-                            enemy_max_step = max([enemy_max_step,len(probleme.astar(prob_temp,verbose=False))])
-                        if enemy_max_step > total_max_step:
-                            total_max_step = enemy_max_step
-                            best_pos = (x1,y1,x2,y2)
-                if best_pos != None :
-                    x1,y1,x2,y2 = best_pos
-                    action = 1
+            # strategy start trap
+            if STRATEGY_MODE[player_num] == 5:
+                # décision de l'action
+                # first turn?
+                action = 0
+                enm_x,enm_y = players[1-player_num].get_rowcol()
+                if prev_num_wall_used[0] == -1:
+                    prev_num_wall_used = num_wall_used.copy()
+                    x1,y1,x2,y2 = enm_x+2*player_num-1,5,enm_x+4*player_num-2,5
+                    if Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
+                        action = 1
+                    else:
+                        STRATEGY_MODE[player_num] = 1
+                elif prev_num_wall_used[1-player_num] == num_wall_used[1-player_num] and num_wall_used[player_num]<nbWalls//2:
+                    analysed_pos = []
+                    total_max_step = -1
+                    best_pos = None
+                    for wall_attempt in range(400):
+                        ((x1,y1),(x2,y2)) = draw_random_wall_location()
+                        if (x1,y1,x2,y2) not in analysed_pos and Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2) and ((y1<5 and y2<5 and enm_y<5)or(y1>5 and y2>5 and enm_y>5)):
+                            analysed_pos.append((x1,y1,x2,y2))
+                            enemy_max_step = -255
+                            new_g = copy.deepcopy(g)
+                            new_g[x1][y1] = False
+                            new_g[x2][y2] = False
+                            for enemy_objective in allObjectifs[1-player_num]:
+                                prob_temp = ProblemeGrid2D(initStates[1-player_num],enemy_objective,new_g,'manhattan')
+                                enemy_max_step = max([enemy_max_step,len(probleme.astar(prob_temp,verbose=False))])
+                            if enemy_max_step > total_max_step:
+                                total_max_step = enemy_max_step
+                                best_pos = (x1,y1,x2,y2)
+                    if best_pos != None :
+                        x1,y1,x2,y2 = best_pos
+                        action = 1
             
-            prev_num_wall_used = num_wall_used.copy()
-
-            if action == 1: # placer un mur
-                walls[player_num][num_wall_used[player_num]].set_rowcol(x1,y1)
-                walls[player_num][num_wall_used[player_num]+nbWalls//2].set_rowcol(x2,y2)
-                g[walls[player_num][num_wall_used[player_num]].get_rowcol()]=False
-                g[walls[player_num][num_wall_used[player_num]+nbWalls//2].get_rowcol()]=False
-                num_wall_used[player_num] += 1
+                prev_num_wall_used = num_wall_used.copy()
+                if action == 1: # placer un mur
+                    walls[player_num][num_wall_used[player_num]].set_rowcol(x1,y1)
+                    walls[player_num][num_wall_used[player_num]+nbWalls//2].set_rowcol(x2,y2)
+                    g[walls[player_num][num_wall_used[player_num]].get_rowcol()]=False
+                    g[walls[player_num][num_wall_used[player_num]+nbWalls//2].get_rowcol()]=False
+                    num_wall_used[player_num] += 1
+                    if num_wall_used[player_num] >= 3:
+                        STRATEGY_MODE[player_num] = 1
                 
-            if action == 0: # 0 -> se déplacer
-                # trouver une route
-                best_step = 255
-                best_pos = None
-                for o in allObjectifs[player_num]:
-                    p = ProblemeGrid2D(initStates[player_num],o,g,'manhattan')
-                    path = probleme.astar(p,verbose=False)
-                    if path[-1] == o and best_step > len(path):
-                        best_step = len(path)
-                        best_pos = path[1]
-                # se déplacer
-                if best_pos == None:
-                    while True:
-                        pass
-                row,col = best_pos
-                posPlayers[player_num]=(row,col)
-                players[player_num].set_rowcol(row,col)
-                print ("pos joueur ",player_num,":", row,col)
-                print(initStates)
-                if (row,col) in allObjectifs[player_num]:
-                    print("le joueur "+str(player_num)+" a atteint son but!")
-                    game_end = 1
-        game.mainiteration()
+                if action == 0: # 0 -> se déplacer
+                    # trouver une route
+                    best_step = 255
+                    best_pos = None
+                    for o in allObjectifs[player_num]:
+                        p = ProblemeGrid2D(initStates[player_num],o,g,'manhattan')
+                        path = probleme.astar(p,verbose=False)
+                        if path[-1] == o and best_step > len(path):
+                            best_step = len(path)
+                            best_pos = path[1]
+                    # se déplacer
+                    if best_pos == None:
+                        while True:
+                            pass
+                    row,col = best_pos
+                    posPlayers[player_num]=(row,col)
+                    players[player_num].set_rowcol(row,col)
+                    print ("pos joueur ",player_num,":", row,col)
+                    print(initStates)
+                    if (row,col) in allObjectifs[player_num]:
+                        print("le joueur "+str(player_num)+" a atteint son but!")
+                        game_end = 1
+            game.mainiteration()
         if game_end==1:
             break
         iterations -= 1
