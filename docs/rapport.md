@@ -1,18 +1,13 @@
 # Rapport de projet
 
 ## Groupe
-* XXX
-* YYY
+* ZHOU runlin 28717281
+* MA peiran 28717249
 
 ## Description des choix importants d'implémentation
 
-Blablabla
 
 ## Description des stratégies proposées
 
-Blablabla
 
 ## Description des résultats
-Comparaison entre les stratégies. Bien indiquer les cartes utilisées.
-
-Blablabla
