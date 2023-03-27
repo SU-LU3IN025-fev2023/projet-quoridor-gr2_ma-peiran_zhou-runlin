@@ -72,10 +72,10 @@ Afin de comparer les différentes stratégies, nous générons le tableau suivan
 - Les colonnes sont les stratégies utilisées par le joueur 2.
 - Le contenu du tableau est le pourcentage de gain du joueur 1 (sur 100 match).
     
-    |nom de strategie |  AStar   | Minimax | Start Trap|
-    | ---             | ----     |  ----   | ----      | 
-    | AStar           | nan      | 0.32    | 0.68
-    | Minimax         | 0.68     | nan     | 0.78
-    | Start Trap      | 0.32     | 0.21    | nan
+    |nom de strategie|  AStar   | Minimax | Start Trap|
+    | --- |----  | ----  | ---- | 
+    | AStar  | nan | 0.36 | 0.86
+    | Minimax | 0.64 | nan | 0.97
+    | Start Trap | 0.14 | 0.03 | nan
 
 
