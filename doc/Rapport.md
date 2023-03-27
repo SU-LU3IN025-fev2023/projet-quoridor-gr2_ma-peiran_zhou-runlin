@@ -74,8 +74,8 @@ Afin de comparer les différentes stratégies, nous générons le tableau suivan
     
     |nom de strategie|  AStar   | Minimax | Start Trap|
     | --- |----  | ----  | ---- | 
-    | AStar  | nan | 0.36 | 0.86
-    | Minimax | 0.64 | nan | 0.97
-    | Start Trap | 0.14 | 0.03 | nan
+    | AStar  | nan | 0.98 | 0.86
+    | Minimax | 0.02 | nan | 0.11
+    | Start Trap | 0.14 | 0.89 | nan
 
 
