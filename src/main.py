@@ -22,7 +22,7 @@ import pySpriteWorld.glo
 from search.grid2D import ProblemeGrid2D
 from search import probleme
 import Utls
-STRATEGY_MODE = [5,1]
+STRATEGY_MODE = [3,0]
 # 0 -> random strategy
 # 1 -> astar
 # 2 -> minimax original
@@ -115,6 +115,22 @@ def main():
                     random_loc_bis = (random_loc[0] + w[0],random_loc[1]+w[1])
                     if legal_wall_position(random_loc_bis):
                         return(random_loc,random_loc_bis)
+                    
+    def all_legal_wall_positions():
+        wl = []
+        for r in range(lMin+1,lMax-1):
+            for c in range(cMin,cMax-1):
+                x1,y1,x2,y2=r,c,r,c+1
+                if legal_wall_position((x1,y1)) and legal_wall_position((x2,y2)):
+                    wl.append(((x1,y1),(x2,y2)))
+        for r in range(lMin+1,lMax-2):
+            for c in range(cMin,cMax):
+                x1,y1,x2,y2=r,c,r+1,c
+                if legal_wall_position((x1,y1)) and legal_wall_position((x2,y2)):
+                    wl.append(((x1,y1),(x2,y2)))
+        return wl
+                    
+        
     #-------------------------------
     # Fonctions permettant de récupérer les listes des coordonnées
     # d'un ensemble d'objets murs ou joueurs
@@ -161,11 +177,8 @@ def main():
                     return v,option,pos_list
             
         if num_wall_used[playernum] < nbWalls//2:
-            analysed_pos = []
-            for wall_attempt in range(200):
-                ((x1,y1),(x2,y2)) = draw_random_wall_location()
-                if (x1,y1,x2,y2) not in analysed_pos and Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
-                    analysed_pos.append((x1,y1,x2,y2))
+            for ((x1,y1),(x2,y2)) in all_legal_wall_positions():
+                if Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
                     #print ("étendu noeud - ",playernum," placer mur ", (x1,y1),(x2,y2)," ; iter= ",iter)
                     nextG = copy.deepcopy(g)
                     nextG[x1][y1]=False
@@ -208,11 +221,8 @@ def main():
                     return v,option,pos_list
             
         if num_wall_used[1-playernum] < nbWalls//2:
-            analysed_pos = []
-            for wall_attempt in range(200):
-                ((x1,y1),(x2,y2)) = draw_random_wall_location()
-                if (x1,y1,x2,y2) not in analysed_pos and Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
-                    analysed_pos.append((x1,y1,x2,y2))
+            for ((x1,y1),(x2,y2)) in all_legal_wall_positions():
+                if Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
                     #print ("étendu noeud - ",playernum," placer mur ", (x1,y1),(x2,y2)," ; iter= ",iter)
                     nextG = copy.deepcopy(g)
                     nextG[x1][y1]=False
@@ -262,8 +272,7 @@ def main():
             
         if num_wall_used[playernum] < nbWalls//2:
             analysed_pos = [] # liste de (x1,y1,x2,y2,d) tel que d est la somme des distances de Manhattan entre les deux positions du mur et la position de l'ennemi.
-            for wall_attempt in range(200):
-                ((x1,y1),(x2,y2)) = draw_random_wall_location()
+            for ((x1,y1),(x2,y2)) in all_legal_wall_positions():
                 if (x1,y1,x2,y2) not in analysed_pos and Utls.exist_route_allobj(copy.deepcopy(g),initStates,allObjectifs,x1,y1,x2,y2):
                     analysed_pos.append((x1,y1,x2,y2,abs(x1+x2-2*initStates[1-playernum][0])+abs(y1+y2-2*initStates[1-playernum][1])))
             # Trier selon d de bas en haut, car pour un seul round d'action, plus le mur est proche de l'ennemi, 
