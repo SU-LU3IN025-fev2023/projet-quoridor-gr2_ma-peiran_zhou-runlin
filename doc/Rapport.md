@@ -18,10 +18,17 @@ Les code principal est dans le ficher <u>*main.py*</u> et <u>*Utls.py*</u>.
 
 ## Description des stratégies proposées
 #### Astar:
+Suppose que **d = Distance restante de l'adversaire - Distance restante de le joueur**
+
 Avant que le joueur ne choisisse de placer un mur ou de se déplacer, nous effectuons les vérifications suivantes :
 - Vérifier s'il reste des murs disponibles pour être placés. Si oui, passer à l'étape suivante, sinon le jouer se déplace.
-- Parcourir toutes les positions possibles pour placer un mur. Après on calcule la distance du chemin le plus court pour les deux joueur. Si la différence des deux valeurs est supérieure à 2 après avoir placé un mur, placer le mur à la position correspondante. Sinon, le joueur se déplace.
+- si d $\geq$ 0, on passe à l'étape suivante, sinon on met un mur
+- Parcourir toutes les positions possibles pour placer un mur. S'il existe un mur qui peut mettre d $\geq$ 2 après avoir placé un mur, placer le mur à la position correspondante. Sinon, le joueur se déplace. 
 - Tous les dépalcement des joueurs se font sur le chemin le plus court.
+
+La propriété de position du mur : 
+1. choisir la position qui peut produit le plus grand d
+2. si'l existe deux même d, on choisir le d qui a le plus grand distance de l'adversaire
 
 #### Minimax et ses versions améliorées
 L'algorithme Minimax est une méthode courante de recherche d'arbre de jeu utilisée pour prendre des décisions entre deux adversaires. L'algorithme suppose que les adversaires sont tous rationnels et choisiront la meilleure stratégie. Par conséquent, l'objectif de l'algorithme est de trouver une stratégie qui minimise les pertes potentielles.
@@ -34,7 +41,7 @@ L'algorithme effectue deux opérations en alternance :
 Dans le cas réel (sur le Quoridor), on peut présenter l'algorithme comme un automate suivant:
 ![](https://i.imgur.com/GHn4ziM.jpg)
 - déplacement : car on a 4 directions, nous choisirons la direction le plus défavorable ou le plus favorable
-- placer un mur : choisir 200 places vailde aléatoirement (Simuler une traversée avec un grand nombre de placement)
+- placer un mur : traversée tous les position possible
 
 L'espace de recherche de l'algorithme Minimax est très grand, donc pour les jeux complexes, son temps de recherche sera très long. Par conséquent, l'algorithme Minimax est généralement utilisé avec des techniques de taille pour réduire l'espace de recherche. 
 Ici, nous utilisons l'algorithme **Alpha-Beta**.
