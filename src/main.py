@@ -22,13 +22,13 @@ import pySpriteWorld.glo
 from search.grid2D import ProblemeGrid2D
 from search import probleme
 import Utls
-STRATEGY_MODE = [3,0]
+STRATEGY_MODE = [4, 1]
 # 0 -> random strategy
 # 1 -> astar
 # 2 -> minimax original
 # 3 -> minimax Alpha-beta
 # 4 -> minimax reduced
-
+# 5 -> start trap
 
 
 
