@@ -30,6 +30,25 @@ STRATEGY_MODE = [4, 1]
 # 4 -> minimax reduced
 # 5 -> start trap
 
+# Structure de main():
+# définition des fonctions
+# initialisation
+# boucle while : un boucle de max fois, max est la limite supérieure du nombre de tours
+#   boucle for : player_num in [0,1], représente le tour de chaque joueur
+#       if : Si la stratégie du joueur est 0
+#           exécuter la stratégie correspondante
+#           Si le joueur choisit de se déplacer, déterminez s'il doit gagner après s'être déplacé
+#       if : Si la stratégie du joueur est 1
+#           exécuter la stratégie correspondante
+#           Si le joueur choisit de se déplacer, déterminez s'il doit gagner après s'être déplacé
+#       if : Si la stratégie du joueur est 2/3/4
+#           exécuter la stratégie correspondante
+#           Si le joueur choisit de se déplacer, déterminez s'il doit gagner après s'être déplacé
+#       if : Si la stratégie du joueur est 5
+#           exécuter la stratégie correspondante
+#           Si le joueur choisit de se déplacer, déterminez s'il doit gagner après s'être déplacé
+#   game iteration
+
 
 
 # ---- ---- ---- ---- ---- ----
@@ -565,6 +584,8 @@ def main():
                         print("le joueur "+str(player_num)+" a atteint son but!")
                         game_end = 1
             game.mainiteration()
+            if game_end == 1:
+                break
         if game_end==1:
             break
         iterations -= 1
